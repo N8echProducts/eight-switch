@@ -1,0 +1,4 @@
+(fp_lib_table
+	(version 7)
+	(lib (name "Nates digikey switch library") (type "KiCad") (uri "${KIPRJMOD}/Nates digikey switch library.pretty") (options "") (descr ""))
+)

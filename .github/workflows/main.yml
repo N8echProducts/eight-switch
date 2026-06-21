@@ -1,0 +1,75 @@
+name: Build eight-switch firmware
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build, Tag, and Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine next version
+        id: version
+        run: |
+          set -euxo pipefail
+
+          # Get latest tag matching vX.Y.Z, default to v0.0.0 if none exist
+          latest_tag=$(git tag --list 'v*.*.*' --sort=-v:refname | head -n1)
+          if [ -z "$latest_tag" ]; then
+            latest_tag="v0.0.0"
+          fi
+
+          # Strip leading 'v' and split into parts
+          version="${latest_tag#v}"
+          major=$(echo "$version" | cut -d. -f1)
+          minor=$(echo "$version" | cut -d. -f2)
+          patch=$(echo "$version" | cut -d. -f3)
+
+          new_patch=$((patch + 1))
+          new_tag="v${major}.${minor}.${new_patch}"
+
+          echo "new_tag=${new_tag}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and generate UF2
+        run: |
+          set -euxo pipefail
+
+          # Install Rust toolchain
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+          source "$HOME/.cargo/env"
+          rustup target add thumbv6m-none-eabi
+
+          # Install libudev (required by elf2uf2-rs build deps)
+          sudo apt-get update
+          sudo apt-get install -y libudev-dev
+
+          # Install elf2uf2-rs
+          cargo install elf2uf2-rs --locked
+
+          # Build firmware
+          cd firmware
+          cargo build --release
+
+          # Generate UF2
+          elf2uf2-rs target/thumbv6m-none-eabi/release/eight-switch ../eight-switch.uf2
+
+      - name: Create tag
+        run: |
+          set -euxo pipefail
+          git tag "${{ steps.version.outputs.new_tag }}"
+          git push origin "${{ steps.version.outputs.new_tag }}"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.new_tag }}
+          name: ${{ steps.version.outputs.new_tag }}
+          files: eight-switch.uf2
