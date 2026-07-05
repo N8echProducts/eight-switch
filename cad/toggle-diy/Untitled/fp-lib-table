@@ -1,4 +1,6 @@
 (fp_lib_table
 	(version 7)
 	(lib (name "Nates digikey switch library") (type "KiCad") (uri "${KIPRJMOD}/Nates digikey switch library.pretty") (options "") (descr ""))
+	(lib (name "eight-switch shared") (type "KiCad") (uri "${KIPRJMOD}/../../shared/Library.pretty") (options "") (descr ""))
+	(lib (name "kailh hotswap") (type "KiCad") (uri "${KIPRJMOD}/../../shared/acheron_MXH.pretty") (options "") (descr ""))
 )
