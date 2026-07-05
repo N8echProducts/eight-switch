@@ -21,3 +21,14 @@ target
 #.idea/
 .DS_Store
 **/.DS_Store
+
+# CAD: keep design source (kicad_pcb/sch/pro/prl/dru, footprints, FCStd) and
+# ignore local history, backups, autosave/lock cruft, and fab-generated output
+cad/**/.history/
+cad/**/*-backups/
+cad/**/_autosave-*
+cad/**/~*.lck
+cad/**/gerbers/
+cad/**/gerbers*.zip
+cad/**/production/
+cad/**/*.kicad_pcb.zip
