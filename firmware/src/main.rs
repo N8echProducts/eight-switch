@@ -8,10 +8,13 @@ use libm;
 use rp_pico::{
     entry,
     hal::{
-        self,
+        self, Clock,
         gpio::{DynPinId, FunctionSio, Pin, PullUp, SioInput},
+        multicore::{Multicore, Stack},
         pac,
+        sio::Sio,
     },
+    pac::{generic::RawReg, timer},
 };
 
 use panic_halt as _;
@@ -34,6 +37,44 @@ static mut USB_BUS: Option<UsbBusAllocator<hal::usb::UsbBus>> = None;
 
 /// The USB Human Interface Device Driver (shared with the interrupt).
 static mut USB_HID: Option<HIDClass<hal::usb::UsbBus>> = None;
+
+static mut CORE1_STACK: Stack<4096> = Stack::new();
+
+fn core1_key_tracker_main(sys_freq: u32, timer: &hal::Timer, keys: &mut CherryBoard) -> ! {
+    let pac = unsafe { pac::Peripherals::steal() };
+    let core = unsafe { pac::CorePeripherals::steal() };
+    let mut sio = Sio::new(pac.SIO);
+
+    let mut delay = cortex_m::delay::Delay::new(core.SYST, sys_freq);
+
+    loop {
+        // look at keys all the time and send them back to core 0 if they are asked for
+        match sio.fifo.read() {
+            // core 0 requested state. Send it back
+            Some(_) => {
+                let mut val: u8 = 0;
+                for x in 0..8 {
+                    if keys.states[x] {
+                        val |= 1 << x;
+                    }
+                }
+                sio.fifo.write(val as u32);
+            }
+            // core 0 didn't request state. Ignore
+            None => {}
+        }
+
+        let now_ms = timer.get_counter().ticks() / 1000;
+        for x in 0..8 {
+            keys.keys[x].update(now_ms);
+            if keys.keys[x].just_pressed() {
+                keys.states[x] = !keys.states[x];
+            }
+        }
+        // just to not spin the second core like crazy all day long
+        delay.delay_ms(2);
+    }
+}
 
 #[entry]
 fn main() -> ! {
@@ -58,7 +99,9 @@ fn main() -> ! {
     .ok()
     .unwrap();
 
-    let sio = hal::Sio::new(pac.SIO);
+    let sys_freq = clocks.system_clock.freq().to_Hz();
+
+    let mut sio = hal::Sio::new(pac.SIO);
     let pins = rp_pico::Pins::new(
         pac.IO_BANK0,
         pac.PADS_BANK0,
@@ -103,17 +146,50 @@ fn main() -> ! {
         USB_DEVICE = Some(usb_dev);
     }
 
-    // set up input pins
-    let mut switches = [
-        pins.gpio0.into_pull_up_input().into_dyn_pin(),
-        pins.gpio1.into_pull_up_input().into_dyn_pin(),
-        pins.gpio2.into_pull_up_input().into_dyn_pin(),
-        pins.gpio3.into_pull_up_input().into_dyn_pin(),
-        pins.gpio4.into_pull_up_input().into_dyn_pin(),
-        pins.gpio5.into_pull_up_input().into_dyn_pin(),
-        pins.gpio6.into_pull_up_input().into_dyn_pin(),
-        pins.gpio7.into_pull_up_input().into_dyn_pin(),
-    ];
+    let mut switch_or_keys_pin = pins.gpio17.into_pull_up_input();
+
+    let mut keys: AnySwitchBoard = match switch_or_keys_pin.is_low().unwrap() {
+        // switch edition
+        false => {
+            let switches = [
+                pins.gpio0.into_pull_up_input().into_dyn_pin(),
+                pins.gpio1.into_pull_up_input().into_dyn_pin(),
+                pins.gpio2.into_pull_up_input().into_dyn_pin(),
+                pins.gpio3.into_pull_up_input().into_dyn_pin(),
+                pins.gpio4.into_pull_up_input().into_dyn_pin(),
+                pins.gpio5.into_pull_up_input().into_dyn_pin(),
+                pins.gpio6.into_pull_up_input().into_dyn_pin(),
+                pins.gpio7.into_pull_up_input().into_dyn_pin(),
+            ];
+            AnySwitchBoard::Toggle(ToggleBoard::new(switches))
+        }
+        // keyboard edition
+        true => {
+            // set up input pins
+            let keyswitches = [
+                DebouncedButton::new(pins.gpio7.into_pull_up_input().into_dyn_pin()),
+                DebouncedButton::new(pins.gpio6.into_pull_up_input().into_dyn_pin()),
+                DebouncedButton::new(pins.gpio5.into_pull_up_input().into_dyn_pin()),
+                DebouncedButton::new(pins.gpio4.into_pull_up_input().into_dyn_pin()),
+                DebouncedButton::new(pins.gpio3.into_pull_up_input().into_dyn_pin()),
+                DebouncedButton::new(pins.gpio2.into_pull_up_input().into_dyn_pin()),
+                DebouncedButton::new(pins.gpio1.into_pull_up_input().into_dyn_pin()),
+                DebouncedButton::new(pins.gpio0.into_pull_up_input().into_dyn_pin()),
+            ];
+
+            let mut keys = CherryBoard {
+                keys: keyswitches,
+                states: [false; 8],
+            };
+            let mut mc = Multicore::new(&mut pac.PSM, &mut pac.PPB, &mut sio.fifo);
+            let cores = mc.cores();
+            let core1 = &mut cores[1];
+            let _ = core1.spawn(unsafe { &mut CORE1_STACK.mem }, move || {
+                core1_key_tracker_main(sys_freq, &timer, &mut keys)
+            });
+            AnySwitchBoard::Cherry(CherryBoardStateGetter::new(sio.fifo))
+        }
+    };
 
     // set up necessary pwm slices for lights
     let pwm_slices = hal::pwm::Slices::new(pac.PWM, &mut pac.RESETS);
@@ -170,7 +246,7 @@ fn main() -> ! {
         [led8, led7, led6, led5, led4, led3, led2, led1];
     let button = pins.gpio8.into_pull_up_input().into_dyn_pin();
 
-    let os = match get_raw_byte_from_switches(&mut switches) {
+    let os = match keys.get_state() {
         1 => OsInputMode::Win,
         2 => OsInputMode::Lin,
         _ => OsInputMode::Mac,
@@ -200,7 +276,7 @@ fn main() -> ! {
         });
 
         let now_ms = timer.get_counter().ticks() / 1000;
-        let switch_state: u8 = get_raw_byte_from_switches(&mut switches);
+        let switch_state: u8 = keys.get_state();
         lm.tick(switch_state, &mut lights, now_ms);
         btn.update(now_ms);
         if btn.just_pressed() {
@@ -919,6 +995,20 @@ impl Processor {
     }
 }
 
+struct StatefulKey {
+    state: bool,
+    key: DebouncedButton,
+}
+
+impl StatefulKey {
+    fn new(pin: Pin<DynPinId, FunctionSio<SioInput>, PullUp>) -> Self {
+        Self {
+            state: false,
+            key: DebouncedButton::new(pin),
+        }
+    }
+}
+
 struct DebouncedButton {
     pin: Pin<DynPinId, FunctionSio<SioInput>, PullUp>,
     last_raw: bool,
@@ -1054,4 +1144,61 @@ fn pulse_brightness(now_ms: u64, start_ms: u64, max_duty_pct: u8, period_ms: u64
     let t = (elapsed % period_ms) as f32 / period_ms as f32;
     let brightness = (libm::sinf(t * core::f32::consts::TAU) * 0.5 + 0.5) * max_duty_pct as f32;
     brightness as u8
+}
+
+trait SwitchBoard {
+    fn get_state(&mut self) -> u8;
+}
+
+enum AnySwitchBoard {
+    Toggle(ToggleBoard),
+    Cherry(CherryBoardStateGetter),
+}
+
+impl SwitchBoard for AnySwitchBoard {
+    fn get_state(&mut self) -> u8 {
+        match self {
+            AnySwitchBoard::Toggle(b) => b.get_state(),
+            AnySwitchBoard::Cherry(b) => b.get_state(),
+        }
+    }
+}
+
+struct ToggleBoard {
+    switches: [Pin<DynPinId, FunctionSio<SioInput>, PullUp>; 8],
+}
+
+impl ToggleBoard {
+    fn new(switches: [Pin<DynPinId, FunctionSio<SioInput>, PullUp>; 8]) -> Self {
+        Self { switches }
+    }
+}
+
+impl SwitchBoard for ToggleBoard {
+    fn get_state(&mut self) -> u8 {
+        return get_raw_byte_from_switches(&mut self.switches);
+    }
+}
+
+struct CherryBoard {
+    keys: [DebouncedButton; 8],
+    states: [bool; 8],
+}
+
+// this doesn't really hold on to the keys as much as it requests the key states from the second thread
+struct CherryBoardStateGetter {
+    fifo: hal::sio::SioFifo,
+}
+
+impl CherryBoardStateGetter {
+    fn new(fifo: hal::sio::SioFifo) -> Self {
+        Self { fifo }
+    }
+}
+
+impl SwitchBoard for CherryBoardStateGetter {
+    fn get_state(&mut self) -> u8 {
+        self.fifo.write(0);
+        self.fifo.read_blocking() as u8
+    }
 }
