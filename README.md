@@ -29,7 +29,7 @@ Utf-8 inputs are currently supported on the following systems, but some only aft
     6. set the Value data to 1,
     7. click OK.
     8. Restart your computer
-1. Flip all keys on your eight-switch off
+1. Flip all keys on your eight-switch off except for the right-most switch (00000001)
 2. Plug in the eight-switch
 
 ## Firmware Updates
