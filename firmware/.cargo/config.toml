@@ -10,7 +10,7 @@ rustflags = [
 rustflags = [
     "-C", "link-arg=--nmagic",
     "-C", "link-arg=-Tlink.x",
-    "-C", "inline-threshold=5",
+    "-C", "llvm-args=--inline-threshold=5",
     "-C", "no-vectorize-loops",
 ]
 runner = "elf2uf2-rs -d"
