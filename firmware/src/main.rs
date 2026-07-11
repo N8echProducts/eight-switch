@@ -2,39 +2,29 @@
 #![no_main]
 #![allow(static_mut_refs)]
 
-use embedded_hal::digital::InputPin;
-use embedded_hal::pwm::SetDutyCycle;
+use embedded_hal::{digital::InputPin, pwm::SetDutyCycle};
 use libm;
 // The macro for our start-up function
-use rp_pico::entry;
+use rp_pico::{
+    entry,
+    hal::{
+        self,
+        gpio::{DynPinId, FunctionSio, Pin, PullUp, SioInput},
+        pac,
+    },
+};
 
-use rp_pico::hal::gpio::DynPinId;
-use rp_pico::hal::gpio::FunctionSio;
-use rp_pico::hal::gpio::Pin;
-use rp_pico::hal::gpio::PullUp;
-use rp_pico::hal::gpio::SioInput;
-
-// Ensure we halt the program on panic (if we don't mention this crate it won't
-// be linked)
 use panic_halt as _;
 
-// A shorter alias for the Peripheral Access Crate, which provides low-level
-// register access
-use rp_pico::hal::pac;
-
-// A shorter alias for the Hardware Abstraction Layer, which provides
-// higher-level drivers.
-use rp_pico::hal;
-
-// USB Device support
 use usb_device::{class_prelude::*, prelude::*};
-
-use usbd_hid::descriptor::KeyboardReport;
-use usbd_hid::descriptor::KeyboardUsage;
-use usbd_hid::descriptor::KeyboardUsage::*;
-// USB Human Interface Device (HID) Class support
-use usbd_hid::descriptor::generator_prelude::*;
-use usbd_hid::hid_class::HIDClass;
+use usbd_hid::{
+    descriptor::{
+        KeyboardReport,
+        KeyboardUsage::{self, *},
+        generator_prelude::*,
+    },
+    hid_class::HIDClass,
+};
 
 /// The USB Device Driver (shared with the interrupt).
 static mut USB_DEVICE: Option<UsbDevice<hal::usb::UsbBus>> = None;
@@ -177,7 +167,7 @@ fn main() -> ! {
     led8.set_duty_cycle_percent(0);
 
     let mut lights: [&mut dyn SetDutyCycle<Error = core::convert::Infallible>; 8] =
-        [led1, led2, led3, led4, led5, led6, led7, led8];
+        [led8, led7, led6, led5, led4, led3, led2, led1];
     let button = pins.gpio8.into_pull_up_input().into_dyn_pin();
 
     let os = match get_raw_byte_from_switches(&mut switches) {
@@ -210,10 +200,11 @@ fn main() -> ! {
         });
 
         let now_ms = timer.get_counter().ticks() / 1000;
-        lm.tick(&mut switches, &mut lights, now_ms);
+        let switch_state: u8 = get_raw_byte_from_switches(&mut switches);
+        lm.tick(switch_state, &mut lights, now_ms);
         btn.update(now_ms);
         if btn.just_pressed() {
-            match keyprocessor.check_for_utf32val(&mut switches) {
+            match keyprocessor.check_for_utf32val(switch_state) {
                 Ok(Some(utf32_val)) => {
                     lm.mode = LightMode::Normal;
                     keybuf.reset();
@@ -571,18 +562,20 @@ fn u32_to_utf16_bytes(mut val: u32) -> ([u8; 8], usize) {
 }
 
 fn match_led_switch_states(
-    switches: &mut [Pin<DynPinId, FunctionSio<SioInput>, PullUp>; 8],
+    switch_state: u8,
     lights: &mut [&mut dyn SetDutyCycle<Error = core::convert::Infallible>; 8],
     duty_cycle: u8,
 ) {
     for i in 0..8 {
-        match switches[i].is_high().unwrap() {
-            true => {
+        match (switch_state >> i) & 1 {
+            1 => {
                 lights[i].set_duty_cycle_percent(duty_cycle);
             }
-            false => {
+            0 => {
                 lights[i].set_duty_cycle_fully_off();
             }
+            // not possible
+            _ => {}
         }
     }
 }
@@ -799,32 +792,28 @@ struct Processor {
 struct ProcessError;
 
 impl Processor {
-    fn check_for_utf32val(
-        &mut self,
-        switches: &mut [Pin<DynPinId, FunctionSio<SioInput>, PullUp>; 8],
-    ) -> Result<Option<u32>, ProcessError> {
-        let byte = get_raw_byte_from_switches(switches);
+    fn check_for_utf32val(&mut self, switch_state: u8) -> Result<Option<u32>, ProcessError> {
         match self.expected_chars {
-            0 => match byte {
-                0..=127 => return Ok(Some(byte as u32)),
+            0 => match switch_state {
+                0..=127 => return Ok(Some(switch_state as u32)),
                 128..=191 => {
                     self.resetbuf();
                     Err(ProcessError)
                 }
                 192..=223 => {
-                    self.bbuf[self.bbufp] = byte;
+                    self.bbuf[self.bbufp] = switch_state;
                     self.bbufp += 1;
                     self.expected_chars = 2;
                     Ok(None)
                 }
                 224..=239 => {
-                    self.bbuf[self.bbufp] = byte;
+                    self.bbuf[self.bbufp] = switch_state;
                     self.bbufp += 1;
                     self.expected_chars = 3;
                     Ok(None)
                 }
                 240..=247 => {
-                    self.bbuf[self.bbufp] = byte;
+                    self.bbuf[self.bbufp] = switch_state;
                     self.bbufp += 1;
                     self.expected_chars = 4;
                     Ok(None)
@@ -835,7 +824,7 @@ impl Processor {
                 }
             },
             _ => {
-                self.bbuf[self.bbufp] = byte;
+                self.bbuf[self.bbufp] = switch_state;
                 self.bbufp += 1;
                 return match self.expected_chars {
                     1 => {
@@ -843,7 +832,7 @@ impl Processor {
                         Err(ProcessError)
                     }
                     2 => {
-                        if byte >> 6 != 2 {
+                        if switch_state >> 6 != 2 {
                             self.resetbuf();
                             Err(ProcessError)
                         } else {
@@ -855,16 +844,16 @@ impl Processor {
                     }
                     3 => {
                         match self.bbufp {
-                            // second byte gotten. Not ready to finish processing
+                            // second switch_state gotten. Not ready to finish processing
                             2 => {
-                                if byte >> 6 != 2 {
+                                if switch_state >> 6 != 2 {
                                     self.resetbuf();
                                     return Err(ProcessError);
                                 }
                                 Ok(None)
                             }
                             3 => {
-                                if byte >> 6 != 2 {
+                                if switch_state >> 6 != 2 {
                                     self.resetbuf();
                                     return Err(ProcessError);
                                 }
@@ -883,21 +872,21 @@ impl Processor {
                     4 => {
                         match self.bbufp {
                             2 => {
-                                if byte >> 6 != 2 {
+                                if switch_state >> 6 != 2 {
                                     self.resetbuf();
                                     return Err(ProcessError);
                                 }
                                 Ok(None)
                             }
                             3 => {
-                                if byte >> 6 != 2 {
+                                if switch_state >> 6 != 2 {
                                     self.resetbuf();
                                     return Err(ProcessError);
                                 }
                                 Ok(None)
                             }
                             4 => {
-                                if byte >> 6 != 2 {
+                                if switch_state >> 6 != 2 {
                                     self.resetbuf();
                                     return Err(ProcessError);
                                 }
@@ -987,7 +976,7 @@ struct LightManager {
 impl LightManager {
     fn tick(
         &mut self,
-        switches: &mut [Pin<DynPinId, FunctionSio<SioInput>, PullUp>; 8],
+        switch_state: u8,
         lights: &mut [&mut dyn SetDutyCycle<Error = core::convert::Infallible>; 8],
         now: u64,
     ) {
@@ -1006,12 +995,12 @@ impl LightManager {
                 }
             },
             LightMode::Normal => {
-                match_led_switch_states(switches, lights, self.default_brightness);
+                match_led_switch_states(switch_state, lights, self.default_brightness);
             }
             LightMode::Pulsing(x) => {
                 let brightness = pulse_brightness(now, *x, self.default_brightness, 1500);
                 let duty = brightness as u8;
-                match_led_switch_states(switches, lights, duty);
+                match_led_switch_states(switch_state, lights, duty);
             }
             LightMode::ErrBlink(x) => match now - x {
                 0..250 => {
