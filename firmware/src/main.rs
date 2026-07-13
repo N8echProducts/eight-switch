@@ -6,15 +6,14 @@ use embedded_hal::{digital::InputPin, pwm::SetDutyCycle};
 use libm;
 // The macro for our start-up function
 use rp_pico::{
-    entry,
+    entry, hal,
     hal::{
-        self, Clock,
+        Clock,
         gpio::{DynPinId, FunctionSio, Pin, PullUp, SioInput},
         multicore::{Multicore, Stack},
         pac,
         sio::Sio,
     },
-    pac::{generic::RawReg, timer},
 };
 
 use panic_halt as _;
