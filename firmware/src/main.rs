@@ -29,6 +29,8 @@ use usbd_hid::{
     hid_class::HIDClass,
 };
 
+mod debounce;
+
 /// The USB Device Driver (shared with the interrupt).
 static mut USB_DEVICE: Option<UsbDevice<hal::usb::UsbBus>> = None;
 
@@ -51,15 +53,27 @@ fn core1_key_tracker_main(sys_freq: u32, timer: &hal::Timer, keys: &mut CherryBo
         // look at keys all the time and send them back to core 0 if they are asked for
         match sio.fifo.read() {
             // core 0 requested state. Send it back
-            Some(_) => {
-                let mut val: u8 = 0;
-                for x in 0..8 {
-                    if keys.states[x] {
-                        val |= 1 << x;
+            Some(req_type) => match req_type {
+                0 => {
+                    let mut val: u8 = 0;
+                    for x in 0..8 {
+                        if keys.states[x] {
+                            val |= 1 << x;
+                        }
                     }
+                    sio.fifo.write(val as u32);
                 }
-                sio.fifo.write(val as u32);
-            }
+                1 => {
+                    let mut val: u8 = 0;
+                    for x in 0..8 {
+                        if keys.keys[x].is_pressed_raw() {
+                            val |= 1 << x;
+                        }
+                    }
+                    sio.fifo.write(val as u32);
+                }
+                _ => {}
+            },
             // core 0 didn't request state. Ignore
             None => {}
         }
@@ -148,7 +162,7 @@ fn main() -> ! {
 
     let mut switch_or_keys_pin = pins.gpio17.into_pull_up_input();
 
-    let mut keys: AnySwitchBoard = match switch_or_keys_pin.is_low().unwrap() {
+    let mut keys: AnySwitchBoard = match !switch_or_keys_pin.is_low().unwrap() {
         // switch edition
         false => {
             let switches = [
@@ -167,14 +181,14 @@ fn main() -> ! {
         true => {
             // set up input pins
             let keyswitches = [
-                DebouncedButton::new(pins.gpio7.into_pull_up_input().into_dyn_pin()),
-                DebouncedButton::new(pins.gpio6.into_pull_up_input().into_dyn_pin()),
-                DebouncedButton::new(pins.gpio5.into_pull_up_input().into_dyn_pin()),
-                DebouncedButton::new(pins.gpio4.into_pull_up_input().into_dyn_pin()),
-                DebouncedButton::new(pins.gpio3.into_pull_up_input().into_dyn_pin()),
-                DebouncedButton::new(pins.gpio2.into_pull_up_input().into_dyn_pin()),
-                DebouncedButton::new(pins.gpio1.into_pull_up_input().into_dyn_pin()),
-                DebouncedButton::new(pins.gpio0.into_pull_up_input().into_dyn_pin()),
+                debounce::DebouncedButton::new(pins.gpio7.into_pull_up_input().into_dyn_pin()),
+                debounce::DebouncedButton::new(pins.gpio6.into_pull_up_input().into_dyn_pin()),
+                debounce::DebouncedButton::new(pins.gpio5.into_pull_up_input().into_dyn_pin()),
+                debounce::DebouncedButton::new(pins.gpio4.into_pull_up_input().into_dyn_pin()),
+                debounce::DebouncedButton::new(pins.gpio3.into_pull_up_input().into_dyn_pin()),
+                debounce::DebouncedButton::new(pins.gpio2.into_pull_up_input().into_dyn_pin()),
+                debounce::DebouncedButton::new(pins.gpio1.into_pull_up_input().into_dyn_pin()),
+                debounce::DebouncedButton::new(pins.gpio0.into_pull_up_input().into_dyn_pin()),
             ];
 
             let mut keys = CherryBoard {
@@ -246,7 +260,7 @@ fn main() -> ! {
         [led8, led7, led6, led5, led4, led3, led2, led1];
     let button = pins.gpio8.into_pull_up_input().into_dyn_pin();
 
-    let os = match keys.get_state() {
+    let os = match keys.get_state_raw() {
         1 => OsInputMode::Win,
         2 => OsInputMode::Lin,
         _ => OsInputMode::Mac,
@@ -258,7 +272,7 @@ fn main() -> ! {
         expected_chars: 0,
     };
 
-    let mut btn = DebouncedButton::new(button);
+    let mut btn = debounce::DebouncedButton::new(button);
 
     let now_ms = timer.get_counter().ticks() / 1000;
     let mut lm = LightManager {
@@ -995,62 +1009,6 @@ impl Processor {
     }
 }
 
-struct StatefulKey {
-    state: bool,
-    key: DebouncedButton,
-}
-
-impl StatefulKey {
-    fn new(pin: Pin<DynPinId, FunctionSio<SioInput>, PullUp>) -> Self {
-        Self {
-            state: false,
-            key: DebouncedButton::new(pin),
-        }
-    }
-}
-
-struct DebouncedButton {
-    pin: Pin<DynPinId, FunctionSio<SioInput>, PullUp>,
-    last_raw: bool,
-    stable_state: bool,
-    stable_since: u64,
-    just_pressed_flag: bool,
-}
-
-impl DebouncedButton {
-    fn new(pin: Pin<DynPinId, FunctionSio<SioInput>, PullUp>) -> Self {
-        Self {
-            pin,
-            last_raw: false,
-            stable_state: false,
-            stable_since: 0,
-            just_pressed_flag: false,
-        }
-    }
-
-    fn update(&mut self, now_ms: u64) {
-        // always clear the flag at the start of update
-        self.just_pressed_flag = false;
-
-        let current = self.pin.is_low().unwrap();
-        if current != self.last_raw {
-            self.last_raw = current;
-            self.stable_since = now_ms;
-        }
-        if now_ms.wrapping_sub(self.stable_since) >= 10 {
-            if current && !self.stable_state {
-                // transition from released to pressed
-                self.just_pressed_flag = true;
-            }
-            self.stable_state = current;
-        }
-    }
-
-    fn just_pressed(&self) -> bool {
-        self.just_pressed_flag
-    }
-}
-
 enum LightMode {
     Pulsing(u64),
     ErrBlink(u64),
@@ -1155,11 +1113,17 @@ enum AnySwitchBoard {
     Cherry(CherryBoardStateGetter),
 }
 
-impl SwitchBoard for AnySwitchBoard {
+impl AnySwitchBoard {
     fn get_state(&mut self) -> u8 {
         match self {
             AnySwitchBoard::Toggle(b) => b.get_state(),
             AnySwitchBoard::Cherry(b) => b.get_state(),
+        }
+    }
+    fn get_state_raw(&mut self) -> u8 {
+        match self {
+            AnySwitchBoard::Toggle(b) => b.get_state(),
+            AnySwitchBoard::Cherry(b) => b.get_raw_keys(),
         }
     }
 }
@@ -1181,7 +1145,7 @@ impl SwitchBoard for ToggleBoard {
 }
 
 struct CherryBoard {
-    keys: [DebouncedButton; 8],
+    keys: [debounce::DebouncedButton; 8],
     states: [bool; 8],
 }
 
@@ -1193,6 +1157,10 @@ struct CherryBoardStateGetter {
 impl CherryBoardStateGetter {
     fn new(fifo: hal::sio::SioFifo) -> Self {
         Self { fifo }
+    }
+    fn get_raw_keys(&mut self) -> u8 {
+        self.fifo.write(1);
+        self.fifo.read_blocking() as u8
     }
 }
 
