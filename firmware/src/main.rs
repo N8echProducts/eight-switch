@@ -162,7 +162,7 @@ fn main() -> ! {
 
     let mut switch_or_keys_pin = pins.gpio17.into_pull_up_input();
 
-    let mut keys: AnySwitchBoard = match !switch_or_keys_pin.is_low().unwrap() {
+    let mut keys: AnySwitchBoard = match switch_or_keys_pin.is_low().unwrap() {
         // switch edition
         false => {
             let switches = [
