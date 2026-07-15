@@ -42,7 +42,7 @@ impl DebouncedButton {
         self.just_pressed_flag
     }
 
-    pub fn is_pressed_raw(&self) -> bool {
-        self.last_raw
+    pub fn is_pressed_raw(&mut self) -> bool {
+        self.pin.is_low().unwrap()
     }
 }

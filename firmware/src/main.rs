@@ -3,8 +3,7 @@
 #![allow(static_mut_refs)]
 
 use embedded_hal::{digital::InputPin, pwm::SetDutyCycle};
-use libm;
-// The macro for our start-up function
+
 use rp_pico::{
     entry, hal,
     hal::{
@@ -29,6 +28,10 @@ use usbd_hid::{
 };
 
 mod debounce;
+use crate::debounce::DebouncedButton;
+
+mod lightmanager;
+use crate::lightmanager::LightMode;
 
 /// The USB Device Driver (shared with the interrupt).
 static mut USB_DEVICE: Option<UsbDevice<hal::usb::UsbBus>> = None;
@@ -180,14 +183,14 @@ fn main() -> ! {
         true => {
             // set up input pins
             let keyswitches = [
-                debounce::DebouncedButton::new(pins.gpio7.into_pull_up_input().into_dyn_pin()),
-                debounce::DebouncedButton::new(pins.gpio6.into_pull_up_input().into_dyn_pin()),
-                debounce::DebouncedButton::new(pins.gpio5.into_pull_up_input().into_dyn_pin()),
-                debounce::DebouncedButton::new(pins.gpio4.into_pull_up_input().into_dyn_pin()),
-                debounce::DebouncedButton::new(pins.gpio3.into_pull_up_input().into_dyn_pin()),
-                debounce::DebouncedButton::new(pins.gpio2.into_pull_up_input().into_dyn_pin()),
-                debounce::DebouncedButton::new(pins.gpio1.into_pull_up_input().into_dyn_pin()),
-                debounce::DebouncedButton::new(pins.gpio0.into_pull_up_input().into_dyn_pin()),
+                DebouncedButton::new(pins.gpio7.into_pull_up_input().into_dyn_pin()),
+                DebouncedButton::new(pins.gpio6.into_pull_up_input().into_dyn_pin()),
+                DebouncedButton::new(pins.gpio5.into_pull_up_input().into_dyn_pin()),
+                DebouncedButton::new(pins.gpio4.into_pull_up_input().into_dyn_pin()),
+                DebouncedButton::new(pins.gpio3.into_pull_up_input().into_dyn_pin()),
+                DebouncedButton::new(pins.gpio2.into_pull_up_input().into_dyn_pin()),
+                DebouncedButton::new(pins.gpio1.into_pull_up_input().into_dyn_pin()),
+                DebouncedButton::new(pins.gpio0.into_pull_up_input().into_dyn_pin()),
             ];
 
             let mut keys = CherryBoard {
@@ -271,13 +274,10 @@ fn main() -> ! {
         expected_chars: 0,
     };
 
-    let mut btn = debounce::DebouncedButton::new(button);
+    let mut btn = DebouncedButton::new(button);
 
     let now_ms = timer.get_counter().ticks() / 1000;
-    let mut lm = LightManager {
-        mode: LightMode::Startup(now_ms),
-        default_brightness: 50,
-    };
+    let mut lm = lightmanager::LightManager::new(lightmanager::LightMode::Startup(now_ms), 50);
 
     let mut keybuf = KeyBuffer::default();
 
@@ -295,12 +295,12 @@ fn main() -> ! {
         if btn.just_pressed() {
             match keyprocessor.check_for_utf32val(switch_state) {
                 Ok(Some(utf32_val)) => {
-                    lm.mode = LightMode::Normal;
+                    lm.set_mode(LightMode::Normal);
                     keybuf.reset();
                     if utf32_val <= 127 {
                         match ascii_to_key_usage(utf32_val as u8) {
                             None => {
-                                lm.mode = LightMode::ErrBlink(now_ms);
+                                lm.set_mode(LightMode::ErrBlink(now_ms));
                             }
                             Some(val) => {
                                 keybuf.push(KbvalWithModKey {
@@ -427,10 +427,10 @@ fn main() -> ! {
                     }
                 }
                 Ok(None) => {
-                    lm.mode = LightMode::Pulsing(now_ms);
+                    lm.set_mode(LightMode::Pulsing(now_ms));
                 }
                 Err(_) => {
-                    lm.mode = LightMode::ErrBlink(now_ms);
+                    lm.set_mode(LightMode::ErrBlink(now_ms));
                 }
             }
         }
@@ -648,25 +648,6 @@ fn u32_to_utf16_bytes(mut val: u32) -> ([u8; 8], usize) {
         buf[i] = nibble as u8;
     }
     (buf, bytes)
-}
-
-fn match_led_switch_states(
-    switch_state: u8,
-    lights: &mut [&mut dyn SetDutyCycle<Error = core::convert::Infallible>; 8],
-    duty_cycle: u8,
-) {
-    for i in 0..8 {
-        match (switch_state >> i) & 1 {
-            1 => {
-                lights[i].set_duty_cycle_percent(duty_cycle);
-            }
-            0 => {
-                lights[i].set_duty_cycle_fully_off();
-            }
-            // not possible
-            _ => {}
-        }
-    }
 }
 
 fn lookup_keycode_for_usb_hex_input(os: OsInputMode, val: u8) -> KeyboardUsage {
@@ -1007,102 +988,6 @@ impl Processor {
         self.expected_chars = 0;
     }
 }
-
-enum LightMode {
-    Pulsing(u64),
-    ErrBlink(u64),
-    Startup(u64),
-    Normal,
-}
-
-struct LightManager {
-    mode: LightMode,
-    default_brightness: u8,
-}
-
-impl LightManager {
-    fn tick(
-        &mut self,
-        switch_state: u8,
-        lights: &mut [&mut dyn SetDutyCycle<Error = core::convert::Infallible>; 8],
-        now: u64,
-    ) {
-        match &self.mode {
-            LightMode::Startup(x) => match now - x {
-                0..125 => set_lights(lights, 0b10000000, self.default_brightness),
-                125..250 => set_lights(lights, 0b11000000, self.default_brightness),
-                250..375 => set_lights(lights, 0b11100000, self.default_brightness),
-                375..500 => set_lights(lights, 0b11110000, self.default_brightness),
-                500..625 => set_lights(lights, 0b11111000, self.default_brightness),
-                625..750 => set_lights(lights, 0b11111100, self.default_brightness),
-                750..875 => set_lights(lights, 0b11111110, self.default_brightness),
-                875..1000 => set_lights(lights, 0b11111111, self.default_brightness),
-                _ => {
-                    self.mode = LightMode::Normal;
-                }
-            },
-            LightMode::Normal => {
-                match_led_switch_states(switch_state, lights, self.default_brightness);
-            }
-            LightMode::Pulsing(x) => {
-                let brightness = pulse_brightness(now, *x, self.default_brightness, 1500);
-                let duty = brightness as u8;
-                match_led_switch_states(switch_state, lights, duty);
-            }
-            LightMode::ErrBlink(x) => match now - x {
-                0..250 => {
-                    all_on(lights, self.default_brightness);
-                }
-                250..500 => {
-                    all_off(lights);
-                }
-                500..750 => {
-                    all_on(lights, self.default_brightness);
-                }
-                750..1000 => {
-                    all_off(lights);
-                }
-                _ => {
-                    self.mode = LightMode::Normal;
-                }
-            },
-        }
-    }
-}
-
-fn set_lights(
-    lights: &mut [&mut dyn SetDutyCycle<Error = core::convert::Infallible>; 8],
-    pattern: u8,
-    duty: u8,
-) {
-    for x in 0..8 {
-        if pattern >> x & 0x01 == 1 {
-            lights[x].set_duty_cycle_percent(duty);
-        } else {
-            lights[x].set_duty_cycle_percent(0);
-        }
-    }
-}
-
-fn all_off(lights: &mut [&mut dyn SetDutyCycle<Error = core::convert::Infallible>; 8]) {
-    for x in lights {
-        x.set_duty_cycle_percent(0).unwrap();
-    }
-}
-
-fn all_on(lights: &mut [&mut dyn SetDutyCycle<Error = core::convert::Infallible>; 8], duty: u8) {
-    for x in lights {
-        x.set_duty_cycle_percent(duty).unwrap();
-    }
-}
-
-fn pulse_brightness(now_ms: u64, start_ms: u64, max_duty_pct: u8, period_ms: u64) -> u8 {
-    let elapsed = now_ms.wrapping_sub(start_ms);
-    let t = (elapsed % period_ms) as f32 / period_ms as f32;
-    let brightness = (libm::sinf(t * core::f32::consts::TAU) * 0.5 + 0.5) * max_duty_pct as f32;
-    brightness as u8
-}
-
 trait SwitchBoard {
     fn get_state(&mut self) -> u8;
 }
@@ -1144,7 +1029,7 @@ impl SwitchBoard for ToggleBoard {
 }
 
 struct CherryBoard {
-    keys: [debounce::DebouncedButton; 8],
+    keys: [DebouncedButton; 8],
     states: [bool; 8],
 }
 

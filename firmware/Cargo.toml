@@ -2,10 +2,6 @@
 name = "eight-switch"
 version = "0.1.0"
 edition = "2024"
-path = "src/main.rs"
-test = false
-doctest = false
-bench = false
 [[bin]]
 name = "eight-switch"
 path = "src/main.rs"
