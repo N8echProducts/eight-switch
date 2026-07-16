@@ -1,4 +1,5 @@
 use embedded_hal::pwm::SetDutyCycle;
+use rp_pico::hal::rom_data::float_funcs::uint64_to_float;
 
 pub struct LightManager {
     mode: LightMode,
@@ -25,14 +26,14 @@ impl LightManager {
     ) {
         match &self.mode {
             LightMode::Startup(x) => match now - x {
-                0..125 => set_lights(lights, 0b10000000, self.default_brightness),
-                125..250 => set_lights(lights, 0b11000000, self.default_brightness),
-                250..375 => set_lights(lights, 0b11100000, self.default_brightness),
-                375..500 => set_lights(lights, 0b11110000, self.default_brightness),
-                500..625 => set_lights(lights, 0b11111000, self.default_brightness),
-                625..750 => set_lights(lights, 0b11111100, self.default_brightness),
-                750..875 => set_lights(lights, 0b11111110, self.default_brightness),
-                875..1000 => set_lights(lights, 0b11111111, self.default_brightness),
+                0..200 => set_lights(lights, 0b10000000, self.default_brightness),
+                200..300 => set_lights(lights, 0b11000000, self.default_brightness),
+                300..400 => set_lights(lights, 0b11100000, self.default_brightness),
+                400..500 => set_lights(lights, 0b11110000, self.default_brightness),
+                500..600 => set_lights(lights, 0b11111000, self.default_brightness),
+                600..700 => set_lights(lights, 0b11111100, self.default_brightness),
+                700..800 => set_lights(lights, 0b11111110, self.default_brightness),
+                800..1000 => set_lights(lights, 0b11111111, self.default_brightness),
                 _ => {
                     self.mode = LightMode::Normal;
                 }
@@ -41,21 +42,27 @@ impl LightManager {
                 match_led_switch_states(switch_state, lights, self.default_brightness);
             }
             LightMode::Pulsing(x) => {
-                let brightness = pulse_brightness(now, *x, self.default_brightness, 1500);
+                let brightness = pulse_brightness(
+                    now,
+                    *x,
+                    self.default_brightness,
+                    self.default_brightness / 10,
+                    1500,
+                );
                 let duty = brightness as u8;
                 match_led_switch_states(switch_state, lights, duty);
             }
             LightMode::ErrBlink(x) => match now - x {
-                0..250 => {
+                0..125 => {
                     all_on(lights, self.default_brightness);
                 }
-                250..500 => {
+                125..250 => {
                     all_off(lights);
                 }
-                500..750 => {
+                250..375 => {
                     all_on(lights, self.default_brightness);
                 }
-                750..1000 => {
+                375..500 => {
                     all_off(lights);
                 }
                 _ => {
@@ -99,10 +106,18 @@ fn all_on(lights: &mut [&mut dyn SetDutyCycle<Error = core::convert::Infallible>
     }
 }
 
-fn pulse_brightness(now_ms: u64, start_ms: u64, max_duty_pct: u8, period_ms: u64) -> u8 {
+fn pulse_brightness(
+    now_ms: u64,
+    start_ms: u64,
+    max_duty_pct: u8,
+    min_duty_pct: u8,
+    period_ms: u64,
+) -> u8 {
     let elapsed = now_ms.wrapping_sub(start_ms);
     let t = (elapsed % period_ms) as f32 / period_ms as f32;
-    let brightness = (libm::sinf(t * core::f32::consts::TAU) * 0.5 + 0.5) * max_duty_pct as f32;
+    let envelope = libm::sinf(t * core::f32::consts::TAU) * 0.5 + 0.5; // 0.0..1.0
+    let range = (max_duty_pct - min_duty_pct) as f32;
+    let brightness = min_duty_pct as f32 + envelope * range;
     brightness as u8
 }
 

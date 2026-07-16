@@ -168,14 +168,14 @@ fn main() -> ! {
         // switch edition
         false => {
             let switches = [
-                pins.gpio0.into_pull_up_input().into_dyn_pin(),
-                pins.gpio1.into_pull_up_input().into_dyn_pin(),
-                pins.gpio2.into_pull_up_input().into_dyn_pin(),
-                pins.gpio3.into_pull_up_input().into_dyn_pin(),
-                pins.gpio4.into_pull_up_input().into_dyn_pin(),
-                pins.gpio5.into_pull_up_input().into_dyn_pin(),
-                pins.gpio6.into_pull_up_input().into_dyn_pin(),
                 pins.gpio7.into_pull_up_input().into_dyn_pin(),
+                pins.gpio6.into_pull_up_input().into_dyn_pin(),
+                pins.gpio5.into_pull_up_input().into_dyn_pin(),
+                pins.gpio4.into_pull_up_input().into_dyn_pin(),
+                pins.gpio3.into_pull_up_input().into_dyn_pin(),
+                pins.gpio2.into_pull_up_input().into_dyn_pin(),
+                pins.gpio1.into_pull_up_input().into_dyn_pin(),
+                pins.gpio0.into_pull_up_input().into_dyn_pin(),
             ];
             AnySwitchBoard::Toggle(ToggleBoard::new(switches))
         }
@@ -702,12 +702,8 @@ fn get_raw_byte_from_switches(
 ) -> u8 {
     let mut val: u8 = 0;
 
-    for switch in switches {
-        val = val << 1;
-        val |= match switch.is_high().unwrap() {
-            true => 1,
-            false => 0,
-        }
+    for x in 0..8 {
+        val |= if switches[x].is_high().unwrap() { 1 } else { 0 } << x;
     }
     val
 }
