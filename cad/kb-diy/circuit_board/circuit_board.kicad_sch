@@ -5770,7 +5770,7 @@
 				)
 			)
 		)
-		(property "Footprint" "PCM_Switch_Keyboard_Cherry_MX:SW_Cherry_MX_PCB_1.50u"
+		(property "Footprint" "PCM_Switch_Keyboard_Cherry_MX:SW_Cherry_MX_PCB_2.25u"
 			(at 160.02 52.07 0)
 			(hide yes)
 			(show_name no)

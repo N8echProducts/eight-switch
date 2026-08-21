@@ -4729,7 +4729,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Button_Switch_THT:SW_SPST_Omron_B3F-40xx"
+		(property "Footprint" "PCM_Switch_Keyboard_Cherry_MX:SW_Cherry_MX_PCB_1.00u"
 			(at 101.6 142.24 0)
 			(hide yes)
 			(show_name no)
