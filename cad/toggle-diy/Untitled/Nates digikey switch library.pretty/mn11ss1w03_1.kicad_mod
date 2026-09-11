@@ -7,7 +7,7 @@
 		(at 0 -8.604 0)
 		(unlocked yes)
 		(layer "F.SilkS")
-		(uuid "3f2696db-e048-488f-8021-d26ef3ccd2a1")
+		(uuid "db43891a-1c60-4d0b-bc3c-4a23da635e13")
 		(effects
 			(font
 				(size 1 1)
@@ -19,7 +19,7 @@
 		(at 0 -6.604 0)
 		(unlocked yes)
 		(layer "F.Fab")
-		(uuid "2cd8fda4-d4ef-4786-b741-b0051e9f4c87")
+		(uuid "f2cfabec-0eb8-4d1a-8245-40c852f80b93")
 		(effects
 			(font
 				(size 1 1)
@@ -32,7 +32,7 @@
 		(unlocked yes)
 		(layer "F.Fab")
 		(hide yes)
-		(uuid "a48f0d41-1cdd-4796-839b-cd2e680c01b4")
+		(uuid "92ced618-f79e-44e8-8e3d-5291d2108224")
 		(effects
 			(font
 				(size 1 1)
@@ -45,7 +45,7 @@
 		(unlocked yes)
 		(layer "F.Fab")
 		(hide yes)
-		(uuid "aa5aa68c-a220-4b35-850b-14b1c38a947c")
+		(uuid "66958829-4ab8-46c3-a360-5a64a37db2ad")
 		(effects
 			(font
 				(size 1 1)
@@ -59,7 +59,7 @@
 		(at 0 -3.104 0)
 		(unlocked yes)
 		(layer "F.Fab")
-		(uuid "0b454280-49c9-494e-8ab7-a2616e6f7343")
+		(uuid "3c04901c-7821-4209-ae36-2d5f237214c1")
 		(effects
 			(font
 				(size 1 1)
@@ -73,7 +73,7 @@
 		(drill 1.8542)
 		(layers "*.Cu" "*.Mask")
 		(remove_unused_layers no)
-		(uuid "c47b564f-e344-4336-a257-bf2040ccce05")
+		(uuid "d78e179e-cd2d-4d34-abf8-e9ce86c9ec8b")
 	)
 	(pad "1" thru_hole circle
 		(at 0 0)
@@ -81,7 +81,7 @@
 		(drill 1.8542)
 		(layers "*.Cu" "*.Mask")
 		(remove_unused_layers no)
-		(uuid "af5a8054-0033-4cea-908f-7f3dcb26b605")
+		(uuid "a9da92bd-a591-4167-bb1d-deb33b6cd10e")
 	)
 	(pad "2" thru_hole circle
 		(at 0 4.699)
@@ -89,7 +89,18 @@
 		(drill 1.8542)
 		(layers "*.Cu" "*.Mask")
 		(remove_unused_layers no)
-		(uuid "9b53e0df-afb2-47df-90cb-ec762a73e2b5")
+		(uuid "cc0a6789-a3c3-4f17-b7f9-d7541d3eec5e")
 	)
 	(embedded_fonts no)
+	(model "${KIPRJMOD}/../../shared/3d_components/switchBody.step"
+		(offset
+			(xyz -11.5 -7 3.5)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz -0 90 -90)
+		)
+	)
 )

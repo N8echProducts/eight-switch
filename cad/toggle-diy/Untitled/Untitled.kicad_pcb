@@ -917,12 +917,6 @@
 		(path "/1d87ca90-4528-4be4-954c-7d894a1e2f2f")
 		(sheetname "/")
 		(sheetfile "Untitled.kicad_sch")
-		(units
-			(unit
-				(name "A")
-				(pins "1" "2")
-			)
-		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_text user "${REFERENCE}"
@@ -968,6 +962,17 @@
 			(uuid "0c525aa7-1fc7-4049-a6fa-eb998b2ae484")
 		)
 		(embedded_fonts no)
+		(model "${KIPRJMOD}/../../shared/3d_components/switchBody.step"
+			(offset
+				(xyz -11.5 -7 3.5)
+			)
+			(scale
+				(xyz 1 1 1)
+			)
+			(rotate
+				(xyz -0 90 -90)
+			)
+		)
 	)
 	(footprint "Nates digikey switch library:mn11ss1w03_1"
 		(layer "F.Cu")
@@ -1026,12 +1031,6 @@
 		(path "/2fbfcf9c-d139-4e8a-998a-e52a9e8d7ed3")
 		(sheetname "/")
 		(sheetfile "Untitled.kicad_sch")
-		(units
-			(unit
-				(name "A")
-				(pins "1" "2")
-			)
-		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_text user "${REFERENCE}"
@@ -1077,6 +1076,17 @@
 			(uuid "de22d8b9-1419-43f2-8b63-45e89cb0f910")
 		)
 		(embedded_fonts no)
+		(model "${KIPRJMOD}/../../shared/3d_components/switchBody.step"
+			(offset
+				(xyz -11.5 -7 3.5)
+			)
+			(scale
+				(xyz 1 1 1)
+			)
+			(rotate
+				(xyz -0 90 -90)
+			)
+		)
 	)
 	(footprint "LED_THT:LED_D5.0mm"
 		(layer "F.Cu")
@@ -1361,12 +1371,6 @@
 		(path "/332ef9c3-2478-40f6-a5b2-acbba119a008")
 		(sheetname "/")
 		(sheetfile "Untitled.kicad_sch")
-		(units
-			(unit
-				(name "A")
-				(pins "1" "2")
-			)
-		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_text user "${REFERENCE}"
@@ -1412,6 +1416,17 @@
 			(uuid "d2e3a870-1c33-48e0-add3-1e33b05e9d0d")
 		)
 		(embedded_fonts no)
+		(model "${KIPRJMOD}/../../shared/3d_components/switchBody.step"
+			(offset
+				(xyz -11.5 -7 3.5)
+			)
+			(scale
+				(xyz 1 1 1)
+			)
+			(rotate
+				(xyz -0 90 -90)
+			)
+		)
 	)
 	(footprint "Module:RaspberryPi_Pico_Common_SMD"
 		(layer "F.Cu")
@@ -5113,12 +5128,6 @@
 		(path "/0dff7e06-e081-48eb-8b29-c2dca7caf7d3")
 		(sheetname "/")
 		(sheetfile "Untitled.kicad_sch")
-		(units
-			(unit
-				(name "A")
-				(pins "1" "2")
-			)
-		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_text user "${REFERENCE}"
@@ -5164,6 +5173,17 @@
 			(uuid "113c72e5-8d3b-4c31-bc10-3a0bab4517a4")
 		)
 		(embedded_fonts no)
+		(model "${KIPRJMOD}/../../shared/3d_components/switchBody.step"
+			(offset
+				(xyz -11.5 -7 3.5)
+			)
+			(scale
+				(xyz 1 1 1)
+			)
+			(rotate
+				(xyz -0 90 -90)
+			)
+		)
 	)
 	(footprint "LED_THT:LED_D5.0mm"
 		(layer "F.Cu")
@@ -5674,12 +5694,6 @@
 		(path "/e2ab3fc4-3df5-41a8-863c-cb1dd754d85f")
 		(sheetname "/")
 		(sheetfile "Untitled.kicad_sch")
-		(units
-			(unit
-				(name "A")
-				(pins "1" "2")
-			)
-		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_text user "${REFERENCE}"
@@ -5725,6 +5739,17 @@
 			(uuid "d0f6fe6f-9632-49bc-93c6-1c85e526c550")
 		)
 		(embedded_fonts no)
+		(model "${KIPRJMOD}/../../shared/3d_components/switchBody.step"
+			(offset
+				(xyz -11.5 -7 3.5)
+			)
+			(scale
+				(xyz 1 1 1)
+			)
+			(rotate
+				(xyz -0 90 -90)
+			)
+		)
 	)
 	(footprint "LED_THT:LED_D5.0mm"
 		(layer "F.Cu")
@@ -6652,12 +6677,6 @@
 		(path "/1062e560-7887-4a54-b9d2-537eaf59f65e")
 		(sheetname "/")
 		(sheetfile "Untitled.kicad_sch")
-		(units
-			(unit
-				(name "A")
-				(pins "1" "2")
-			)
-		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_text user "${REFERENCE}"
@@ -6703,6 +6722,17 @@
 			(uuid "c35defa7-b2f9-41fe-b991-3de6db07b6d8")
 		)
 		(embedded_fonts no)
+		(model "${KIPRJMOD}/../../shared/3d_components/switchBody.step"
+			(offset
+				(xyz -11.5 -7 3.5)
+			)
+			(scale
+				(xyz 1 1 1)
+			)
+			(rotate
+				(xyz -0 90 -90)
+			)
+		)
 	)
 	(footprint "LED_THT:LED_D5.0mm"
 		(layer "F.Cu")
@@ -6987,12 +7017,6 @@
 		(path "/4c531686-a42d-46f0-9c93-cdd0d0b21a90")
 		(sheetname "/")
 		(sheetfile "Untitled.kicad_sch")
-		(units
-			(unit
-				(name "A")
-				(pins "1" "2")
-			)
-		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_text user "${REFERENCE}"
@@ -7038,6 +7062,17 @@
 			(uuid "5d6b6d8c-dde9-449c-b05f-f380023f69cd")
 		)
 		(embedded_fonts no)
+		(model "${KIPRJMOD}/../../shared/3d_components/switchBody.step"
+			(offset
+				(xyz -11.5 -7 3.5)
+			)
+			(scale
+				(xyz 1 1 1)
+			)
+			(rotate
+				(xyz -0 90 -90)
+			)
+		)
 	)
 	(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
 		(layer "F.Cu")
@@ -7287,12 +7322,6 @@
 		(path "/345b1c87-fabd-4c1a-aaef-30dd5f7861ab")
 		(sheetname "/")
 		(sheetfile "Untitled.kicad_sch")
-		(units
-			(unit
-				(name "A")
-				(pins "1" "2")
-			)
-		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_text user "${REFERENCE}"
@@ -7338,6 +7367,17 @@
 			(uuid "2f9f6a91-45c1-4278-9b48-b4e41cc457e6")
 		)
 		(embedded_fonts no)
+		(model "${KIPRJMOD}/../../shared/3d_components/switchBody.step"
+			(offset
+				(xyz -11.5 -7 3.5)
+			)
+			(scale
+				(xyz 1 1 1)
+			)
+			(rotate
+				(xyz -0 90 -90)
+			)
+		)
 	)
 	(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
 		(layer "F.Cu")
