@@ -24,7 +24,7 @@ You will also need:
 ## Assembly
 You can put the different parts in and install them however you want, however, the order I've provided will make for the easiest assembly.
 
-![Soldering the first Pico pin in the jig](images/DSC06651.jpg)
+![The board placed in the jig, ready to start soldering](images/DSC06651.jpg)
 *The board placed and ready to start.*
 
 
