@@ -62,7 +62,7 @@ You can put the different parts in and install them however you want, however, t
 3. Solder the keyswitches and LEDs onto the circuit board
   1. Put the LEDs through the slot in the keyswitch (as pictured)
   NOTE: The LEDs are polarized and must be placed in the correct direction. The long lead on the LED should go through the round plated hole in the circuit board. Look at the image for an example.
-![An LED's leads threaded through the gap in a keyswitch housing before being pushed into the board](images/DSC06683.jpg)
+![An LED's leads threaded through the gap in a keyswitch housing before being pushed into the board](images/DSC06686.jpg)
 *An LED's leads threaded through the gap in a keyswitch housing, before being pushed down into the board.*
   2. place a keyswitch and LED into the holes for them, holding the LED AND switch at the same time to ensure they are flush to the board
 ![LEDs seated under each keyswitch, board held toward the light](images/DSC06690.jpg)
