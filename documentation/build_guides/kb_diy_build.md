@@ -73,15 +73,12 @@ You can put the different parts in and install them however you want, however, t
   4. Solder the keyswitch lead the same way you did the resistor lead
   7. repeat this process until all 8 keyswitches with lights are soldered
 4. Solder the last keyswitch (without LED)
-5. Push the keycaps onto the keys
-
 ![Keycaps being pushed onto the keyswitches one by one](images/DSC06694.jpg)
 *Pushing the keycaps onto the keyswitches.*
-
+5. Push the keycaps onto the keys
 6. Plug in your eight-switch Keyboard and try it out!
-
 ![The finished Eight-Switch KB DIY board](images/DSC06698.jpg)
 *The finished board.*
 
 ![The finished Eight-Switch KB DIY board, straight on](images/DSC06702.jpg)
-*The finished board, straight on.*
+*The finished board (another angle).*
