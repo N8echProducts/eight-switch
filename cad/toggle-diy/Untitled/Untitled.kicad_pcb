@@ -7772,18 +7772,6 @@
 		(layer "Edge.Cuts")
 		(uuid "d8c9119d-cb03-4634-a145-cee8efa92655")
 	)
-	(gr_text "N8tech 8switch prototoype III rev1"
-		(at 128.27 33.02 0)
-		(layer "F.SilkS")
-		(uuid "36dce218-7c84-4de5-916e-a2b4f88d6f6a")
-		(effects
-			(font
-				(size 1 1)
-				(thickness 0.1)
-			)
-			(justify left bottom)
-		)
-	)
 	(segment
 		(start 72.39 49.06)
 		(end 69.85 46.52)
