@@ -3,13 +3,14 @@
 ## materials
 
 Your Eight-Switch KB DIY edition should have the following in the package:
-1. 1 circuit board
-1. 9 cherry style keyswitches (note: if you want to use another type of switch, now would be the time to switch them out)
-1. 8 1u Keycaps
-1. 1 1.5u Keycap
-1. 8 resistors
-1. 8 white LEDs
-1. 1 Raspberry Pi Pico
+
+- 1 circuit board
+- 9 cherry style keyswitches (note: if you want to use another type of switch, now would be the time to switch them out)
+- 8 1u Keycaps
+- 1 2u Keycap
+- 8 resistors
+- 8 white LEDs
+- 1 Raspberry Pi Pico
 
 You will also need:
 1. A soldering iron
@@ -46,18 +47,19 @@ You can put the different parts in and install them however you want, however, t
 
       ![The Pico fully soldered onto the board](images/DSC06668.jpg)
       *The Pico fully soldered onto the board.*
-2. Solder the resistors onto the circuit board
-   1. The resistor holes are the ones between the keyswitches.
-   2. Place the resistor leads into the resistor holes.
+2. Solder the resistors onto the circuit board on the top side (the side with the printing on it)
+   1. The resistor holes are the ones between the "sw" labeled squares on the board (the keyswitch footprints).
+   2. Place the resistor leads into the resistor holes from the top.
 
       ![Resistors placed in their holes](images/DSC06672.jpg)
       *Resistors placed in their holes before soldering.*
-   3. Bend the resistor leads down to hold the resistors in temporarily to work on the other side of the board.
+   3. Bend the resistor leads down on the back-side of the board to hold the resistors in temporarily to work on the other side of the board.
 
       ![Board held up at an angle showing the resistors in place](images/DSC06674.jpg)
       *Board held up to check the resistor placement before flipping it to solder.*
    4. Use your hot soldering iron to heat up the resistor lead and the hole in the board at the same time.
    5. Slowly feed solder into the joint where the hole and the resistor lead meet.
+   6. Cut excess wire from the soldered LED leads
 
    ![Resistor leads soldered and trimmed flush on the back of the board](images/DSC06677.jpg)
    *Resistor leads soldered and trimmed flush.*
