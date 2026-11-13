@@ -82,12 +82,21 @@ jobs:
           # Generate UF2
           elf2uf2-rs target/thumbv6m-none-eabi/release/eight-switch ../eight-switch.uf2
 
+      - name: Build QMK macropad firmware
+        run: |
+          set -euxo pipefail
+          docker run --rm -v "$PWD:/work" -w /work/qmk-firmware ghcr.io/qmk/qmk_cli ./build.sh
+          sudo chown -R "$(id -u):$(id -g)" qmk-firmware
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.new_tag }}
           name: ${{ steps.version.outputs.new_tag }}
-          files: eight-switch.uf2
+          files: |
+            eight-switch.uf2
+            qmk-firmware/build/*.uf2
+            qmk-firmware/via/eight_switch.json
 
       - name: Summary
         run: |

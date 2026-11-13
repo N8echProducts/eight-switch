@@ -40,6 +40,10 @@ the eight-switch is based on the Raspberry pi rp2040 chip, which makes flashing 
 2. drag the .uf2 file from your computer to the drive the device is presenting itself as
 3. wait for the device to restart
 
+## QMK mode
+The KB editions can be loaded with [QMK](https://qmk.fm)
+- Note: The qmk implementation is not the core implementation of the project and is thus vibecoded. Anything in the `qmk-firmware` directory may be considered "slop" but it does seem to work as far as I have tested it. Prebuilt `.uf2` files for a nonsense keymap are attached to releases
+
 ## AI disclosure
 The product and firmware was all hand-designed/coded with only chatbot style glorified Google Search patterns to/from Claude code.
 The utf-8 booklet was nearly entirely vibecoded beyond the initial implementation.
