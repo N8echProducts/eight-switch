@@ -25,18 +25,27 @@ export const ascii: Mode = {
     typed.textContent = buffer;
   },
   update({ value }) {
+    strip.innerHTML = "";
+    if (value > 127) {
+      glyph.textContent = "✕";
+      glyph.classList.remove("small");
+      glyph.classList.add("invalid");
+      name.textContent = `${value} · 0x${hex(value)} · not ASCII. ASCII is 7 bits (0–127), so the left-most switch must be off.`;
+      return;
+    }
     const c = charLabel(value);
     glyph.textContent = c.glyph;
+    glyph.classList.remove("invalid");
     glyph.classList.toggle("small", c.glyph.length > 1);
     name.textContent = `${value} · 0x${hex(value)} · ${c.name}`;
-    strip.innerHTML = "";
-    for (let v = Math.max(0, value - 4); v <= Math.min(255, value + 4); v++) {
+    for (let v = Math.max(0, value - 4); v <= Math.min(127, value + 4); v++) {
       const cell = el("div", v === value ? "strip-cell current" : "strip-cell");
       cell.append(el("div", "strip-glyph", charLabel(v).glyph), el("div", "strip-code", String(v)));
       strip.append(cell);
     }
   },
   onSend({ value }) {
+    if (value > 127) return;
     if (value === 8) buffer = buffer.slice(0, -1);
     else if (value === 10 || value === 13) buffer += "\n";
     else if (value >= 32 && value !== 127) buffer += String.fromCharCode(value);

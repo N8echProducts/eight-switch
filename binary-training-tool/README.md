@@ -11,7 +11,12 @@ Note: like `qmk-firmware/`, this directory is vibecoded.
 - **Place values** – each switch with its weight (128 … 1) and the sum.
 - **Bases** – binary, octal, decimal and hex, with the hex nibble split.
 - **Two's complement** – unsigned vs. signed (int8) reading of the byte.
-- **ASCII** – the character for the byte; the send button appends it to a line of text.
+- **ASCII** – the 7-bit ASCII character for the byte (0–127); the send button appends it to a line of text.
+- **UTF-8** – each send commits one byte to a UTF-8 sequence. Shows the byte's role
+  (ASCII / lead / continuation), the sequence slots, the code point built from the
+  payload bits, and why invalid bytes are rejected.
+- **UTF-16** – two sends per 16-bit code unit (high byte first, UTF-16BE), with a
+  breakdown of surrogate pairs for code points above U+FFFF.
 - **Challenge** – a decimal / hex / octal / ASCII / negative value is shown and
   you set the switches to match. Checks automatically, or on the send button.
 
@@ -41,6 +46,7 @@ src/
   protocol.ts   USB report format (keep in sync with the firmware)
   device.ts     WebHID connect / auto-reconnect / report handling
   store.ts      current switch byte + send button, from device or screen
+  encoding.ts   byte-at-a-time UTF-8 / UTF-16 decoders
   main.ts       switch bank, tabs, keyboard fallback
   modes/        one file per display mode
 ```

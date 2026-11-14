@@ -33,6 +33,9 @@ use crate::debounce::DebouncedButton;
 mod lightmanager;
 use crate::lightmanager::LightMode;
 
+mod liveread;
+use crate::liveread::LiveReadReport;
+
 /// The USB Device Driver (shared with the interrupt).
 static mut USB_DEVICE: Option<UsbDevice<hal::usb::UsbBus>> = None;
 
@@ -147,6 +150,10 @@ fn main() -> ! {
     unsafe {
         USB_HID = Some(usb_hid);
     }
+
+    let mut usb_live_read = HIDClass::new(bus_ref, LiveReadReport::desc(), 10);
+    let mut last_sent: Option<(u8, u8)> = None;
+    let mut press_pending = false;
 
     let usb_dev = UsbDeviceBuilder::new(bus_ref, UsbVidPid(0x16c0, 0x27dc))
         .strings(&[StringDescriptors::default()
@@ -285,13 +292,34 @@ fn main() -> ! {
         critical_section::with(|_| unsafe {
             let usb_dev = USB_DEVICE.as_mut().unwrap();
             let usb_hid = USB_HID.as_mut().unwrap();
-            usb_dev.poll(&mut [usb_hid]);
+            usb_dev.poll(&mut [usb_hid, &mut usb_live_read]);
         });
 
         let now_ms = timer.get_counter().ticks() / 1000;
         let switch_state: u8 = keys.get_state();
         lm.tick(switch_state, &mut lights, now_ms);
         btn.update(now_ms);
+
+        // usb live read
+        let mut req = [0u8; 1];
+        if let Ok(n) = usb_live_read.pull_raw_output(&mut req) {
+            if n > 0 && req[0] == 0x02 {
+                last_sent = None;
+            }
+        }
+
+        if btn.just_pressed() {
+            press_pending = true;
+        }
+        let buttons = press_pending as u8;
+        if last_sent != Some((switch_state, buttons)) {
+            let report = LiveReadReport { msg_type: 0x01, switches: switch_state, buttons, request: 0 };
+            if usb_live_read.push_input(&report).is_ok() {
+                last_sent = Some((switch_state, buttons));
+                press_pending = false;
+            }
+        }
+
         if btn.just_pressed() {
             match keyprocessor.check_for_utf32val(switch_state) {
                 Ok(Some(utf32_val)) => {

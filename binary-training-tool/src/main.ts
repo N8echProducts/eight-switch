@@ -7,9 +7,11 @@ import { placeValues } from "./modes/placeValues";
 import { bases } from "./modes/bases";
 import { signed } from "./modes/signed";
 import { ascii } from "./modes/ascii";
+import { utf8 } from "./modes/utf8";
+import { utf16 } from "./modes/utf16";
 import { challenge } from "./modes/challenge";
 
-const MODES: Mode[] = [placeValues, bases, signed, ascii, challenge];
+const MODES: Mode[] = [placeValues, bases, signed, ascii, utf8, utf16, challenge];
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const switchesEl = $("switches");
@@ -79,6 +81,25 @@ subscribe((state) => {
 onSendPress(() => active.onSend?.(getState()));
 
 // --- Keyboard fallback ---
+
+// With a device connected, the Eight-Switch is also typing into this page as a keyboard every time
+// send is pressed. A typed Enter/Space would "click" whatever button has focus (tabs, Disconnect,
+// Clear...), and Tab would move focus, so swallow those. Presses are read from the USB reports instead.
+const DEVICE_TYPED_KEYS = new Set(["Enter", " ", "Tab"]);
+for (const type of ["keydown", "keyup"] as const) {
+  window.addEventListener(
+    type,
+    (e) => {
+      if (getState().source === "device" && DEVICE_TYPED_KEYS.has(e.key)) e.preventDefault();
+    },
+    { capture: true },
+  );
+}
+
+// Don't leave mouse-clicked buttons focused, so stray keys can't re-trigger them.
+document.addEventListener("click", (e) => {
+  if (e.detail > 0) (e.target as HTMLElement).closest("button")?.blur();
+});
 
 window.addEventListener("keydown", (e) => {
   if (e.metaKey || e.ctrlKey || e.altKey || e.target instanceof HTMLInputElement) return;

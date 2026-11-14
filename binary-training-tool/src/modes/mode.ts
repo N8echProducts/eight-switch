@@ -33,12 +33,21 @@ const CONTROL_NAMES = [
   "DLE", "DC1", "DC2", "DC3", "DC4", "NAK", "SYN", "ETB", "CAN", "EM", "SUB", "ESC", "FS", "GS", "RS", "US",
 ];
 
-/** Human-readable glyph for a byte interpreted as ASCII / Latin-1. */
+/** Human-readable glyph for a 7-bit ASCII code (0–127). */
 export function charLabel(v: number): { glyph: string; name: string } {
   if (v < 32) return { glyph: CONTROL_NAMES[v], name: "control character" };
   if (v === 32) return { glyph: "␠", name: "space" };
-  if (v === 127) return { glyph: "DEL", name: "delete" };
-  if (v < 127) return { glyph: String.fromCharCode(v), name: "printable ASCII" };
-  if (v < 160) return { glyph: "—", name: "not ASCII (C1 control in Latin-1)" };
-  return { glyph: String.fromCharCode(v), name: "not ASCII (Latin-1)" };
+  if (v === 127) return { glyph: "DEL", name: "control character" };
+  return { glyph: String.fromCharCode(v), name: "printable character" };
 }
+
+/** Text to append to an output area for a decoded code point. Control codes become their visible symbols. */
+export function printable(cp: number): string {
+  if (cp === 10 || cp === 13) return "\n";
+  if (cp < 32) return String.fromCodePoint(0x2400 + cp);
+  if (cp === 127) return "\u2421";
+  if (cp > 0x10ffff || (cp >= 0xd800 && cp <= 0xdfff)) return "\ufffd";
+  return String.fromCodePoint(cp);
+}
+
+export const codePoint = (cp: number) => `U+${hex(cp, 4)}`;

@@ -28,7 +28,13 @@ harmless.
 |------|---------------------------------------------------------------|
 | 0    | Message type, `0x01` = state                                  |
 | 1    | Switch byte. Bit 7 = left-most switch, bit 0 = right-most     |
-| 2    | Button flags. Bit 0 = send button held, other bits reserved 0 |
+| 2    | Button flags. Bit 0 = send button pressed, other bits reserved 0 |
+
+The app counts one press each time bit 0 goes from 0 to 1, so a press needs a
+report with the bit set followed by one with it clear. Either "held" or a
+one-report pulse works, but a pulse must not be dropped: if `push_input` fails
+(the host hasn't collected the previous report yet), keep the press pending and
+send it on a later loop, otherwise the keyboard's decoder and the app drift apart.
 
 The report has no report ID. Pad to the report size declared in the descriptor
 (8 bytes is suggested); trailing bytes are ignored.
