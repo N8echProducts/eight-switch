@@ -1,6 +1,10 @@
 # eight-switch
 Open Source Utf-8 direct keyboard
 
+## Buying
+- [n8ech store](https://store.n8ech.com/collections/eight-switch-binary-keyboard)
+- [Tindie (KB Edition DIY Kit)](https://www.tindie.com/products/n8ech/eight-switch-kb-edition-diy-kit/)
+
 ## Using
 ASCII inputs work on more-or-less any device that takes a usb keyboard out of the box.
 1. Plug in the eight-switch
