@@ -37,7 +37,7 @@ Utf-8 inputs are currently supported on the following systems, but some only aft
 2. Plug in the eight-switch
 
 ## Firmware Updates
-Firmware can be found on the ["Releases" page](https://github.com/npmaile/eight-switch/releases) in this repository
+Firmware can be found on the ["Releases" page](https://github.com/N8echProducts/eight-switch/releases) in this repository
 ### Flashing new updates
 the eight-switch is based on the Raspberry pi rp2040 chip, which makes flashing the firmware trivial.
 1. Hold down the "flash firmware" button (the button that isn't the push-button to send sequences to the computer) while plugging the device into your computer.
